@@ -1,2 +1,5 @@
 /target
 *.log
+
+## This is a library
+Cargo.lock
