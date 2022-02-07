@@ -1,8 +1,6 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}
+//! Performs various operations on broadcast queues.
+//!
+//! This crate is WIP and currently only works with crossbeam.
+
+#[cfg(feature = "crossbeam")]
+pub mod crossbeam;
