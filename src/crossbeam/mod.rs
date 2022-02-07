@@ -6,9 +6,22 @@ pub mod distinct_until_changed;
 
 pub use distinct_until_changed::DistinctUntilChanged;
 
+use crate::PipelineStage;
+
+impl<T> PipelineStage<T> for Sender<T> {
+    fn select(&self, el: T) -> Option<T> {
+        Some(el)
+    }
+}
+
+/// The sending side of a channel.
+///
+/// This might be either a raw [`Sender`] object or a part of a pipeline.
+///
+/// To learn more, see [`Sender`].
 pub trait CrossbeamSender<T>
 where
-    Self: Sized,
+    Self: Sized + PipelineStage<T>,
 {
     fn try_send(&self, msg: T) -> Result<(), TrySendError<T>>;
     fn send(&self, msg: T) -> Result<(), SendError<T>>;

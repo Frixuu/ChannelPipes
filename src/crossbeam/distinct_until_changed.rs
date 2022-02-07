@@ -2,6 +2,8 @@ use std::cell::RefCell;
 
 use crossbeam_channel::Sender;
 
+use crate::PipelineStage;
+
 use super::CrossbeamSender;
 
 pub trait DistinctUntilChangedPipeSenderExt<T, S>
@@ -73,13 +75,32 @@ where
     inner_sender: S,
 }
 
+impl<T, S> PipelineStage<T> for DistinctUntilChangedPipeSender<T, S>
+where
+    T: PartialEq + Clone,
+    S: CrossbeamSender<T> + Sized,
+{
+    fn select(&self, el: T) -> Option<T> {
+        let inner_select = self.inner_sender.select(el);
+        if let Some(element) = inner_select {
+            if (*self.last_message.borrow()).as_ref() == Some(&element) {
+                None
+            } else {
+                Some(element)
+            }
+        } else {
+            None
+        }
+    }
+}
+
 impl<T, S> CrossbeamSender<T> for DistinctUntilChangedPipeSender<T, S>
 where
     T: PartialEq + Clone,
     S: CrossbeamSender<T> + Sized,
 {
     fn try_send(&self, msg: T) -> Result<(), crossbeam_channel::TrySendError<T>> {
-        if (*self.last_message.borrow()).as_ref() != Some(&msg) {
+        if let Some(msg) = self.select(msg) {
             self.last_message.replace(Some(msg.clone()));
             self.inner_sender.try_send(msg)
         } else {
@@ -88,7 +109,7 @@ where
     }
 
     fn send(&self, msg: T) -> Result<(), crossbeam_channel::SendError<T>> {
-        if (*self.last_message.borrow()).as_ref() != Some(&msg) {
+        if let Some(msg) = self.select(msg) {
             self.last_message.replace(Some(msg.clone()));
             self.inner_sender.send(msg)
         } else {
@@ -101,7 +122,7 @@ where
         msg: T,
         timeout: std::time::Duration,
     ) -> Result<(), crossbeam_channel::SendTimeoutError<T>> {
-        if (*self.last_message.borrow()).as_ref() != Some(&msg) {
+        if let Some(msg) = self.select(msg) {
             self.last_message.replace(Some(msg.clone()));
             self.inner_sender.send_timeout(msg, timeout)
         } else {
@@ -114,7 +135,7 @@ where
         msg: T,
         deadline: std::time::Instant,
     ) -> Result<(), crossbeam_channel::SendTimeoutError<T>> {
-        if (*self.last_message.borrow()).as_ref() != Some(&msg) {
+        if let Some(msg) = self.select(msg) {
             self.last_message.replace(Some(msg.clone()));
             self.inner_sender.send_deadline(msg, deadline)
         } else {

@@ -4,3 +4,7 @@
 
 #[cfg(feature = "crossbeam")]
 pub mod crossbeam;
+
+pub trait PipelineStage<T> {
+    fn select(&self, el: T) -> Option<T>;
+}
