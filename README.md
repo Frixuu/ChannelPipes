@@ -1,5 +1,8 @@
 # channel_pipes
 
+![Crates.io](https://img.shields.io/crates/v/channel_pipes) ![Crates.io](https://img.shields.io/crates/d/channel_pipes) ![Crates.io](https://img.shields.io/crates/l/channel_pipes)  
+![GitHub last commit](https://img.shields.io/github/last-commit/Frixuu/ChannelPipes) ![Lines of code](https://img.shields.io/tokei/lines/github/Frixuu/ChannelPipes)
+
 ## Usage
 
 If you use ```crossbeam-channel```, add this to your ```Cargo.toml```:
