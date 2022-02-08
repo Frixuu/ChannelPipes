@@ -6,6 +6,7 @@ edition = "2021"
 authors = ["Frixuu <kontakt@lukasz.xyz>"]
 readme = "README.md"
 repository = "https://github.com/Frixuu/ChannelPipes"
+keywords = ["channel", "mpsc", "mpmc"]
 categories = ["concurrency"]
 license = "MIT"
 
