@@ -1,3 +1,5 @@
+//! Implementation of channel_pipes for the `crossbeam_channel` crate.
+
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{SendError, SendTimeoutError, Sender, TrySendError};
@@ -8,12 +10,6 @@ pub use distinct_until_changed::DistinctUntilChanged;
 
 use crate::PipelineStage;
 
-impl<T> PipelineStage<T, T> for Sender<T> {
-    fn apply(&self, element: T) -> Option<T> {
-        Some(element)
-    }
-}
-
 /// The sending side of a channel.
 ///
 /// This might be either a raw [`Sender`] object or a part of a pipeline.
@@ -21,9 +17,11 @@ impl<T> PipelineStage<T, T> for Sender<T> {
 /// To learn more, see [`Sender`].
 pub trait CrossbeamSender<T>
 where
-    Self: Sized + PipelineStage<T, T>,
+    Self: Sized,
 {
+    /// Attempts to send a message into the channel without blocking.
     fn try_send(&self, msg: T) -> Result<(), TrySendError<T>>;
+    /// Blocks the current thread until a message is sent or the channel is disconnected.
     fn send(&self, msg: T) -> Result<(), SendError<T>>;
     fn send_timeout(&self, msg: T, timeout: Duration) -> Result<(), SendTimeoutError<T>>;
     fn send_deadline(&self, msg: T, deadline: Instant) -> Result<(), SendTimeoutError<T>>;
@@ -69,5 +67,11 @@ impl<T> CrossbeamSender<T> for Sender<T> {
 
     fn same_channel(&self, other: &Sender<T>) -> bool {
         self.same_channel(other)
+    }
+}
+
+impl<T> PipelineStage<T, T> for Sender<T> {
+    fn apply(&self, element: T) -> Option<T> {
+        Some(element)
     }
 }

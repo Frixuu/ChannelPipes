@@ -7,80 +7,20 @@ use crate::PipelineStage;
 
 use super::CrossbeamSender;
 
-pub trait DistinctUntilChangedPipeSenderExt<T, S>
-where
-    T: PartialEq + Clone,
-    S: CrossbeamSender<T>,
-{
-    fn distinct_until_changed(self) -> DistinctUntilChangedPipeSender<T, S>;
-}
-
-pub trait DistinctUntilChanged<T, S, R>
-where
-    T: PartialEq + Clone,
-    S: CrossbeamSender<T>,
-{
-    fn distinct_until_changed(self) -> (DistinctUntilChangedPipeSender<T, S>, R);
-}
-
-impl<T, S> DistinctUntilChangedPipeSenderExt<T, S> for S
-where
-    T: PartialEq + Clone,
-    S: CrossbeamSender<T>,
-{
-    /// Wraps crossbeam's Sender so that it sends non-repeating elements.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use channel_pipes::crossbeam::{CrossbeamSender, DistinctUntilChanged};
-    /// use crossbeam_channel::unbounded;
-    ///
-    /// let (s, r) = unbounded::<i32>().distinct_until_changed();
-    ///
-    /// let vec = vec![1, 2, 2, 3, 3, 3, 1];
-    /// for i in vec {
-    ///     s.send(i);
-    /// }
-    ///
-    /// assert_eq!(Ok(1), r.try_recv());
-    /// assert_eq!(Ok(2), r.try_recv());
-    /// assert_eq!(Ok(3), r.try_recv());
-    /// assert_eq!(Ok(1), r.try_recv());
-    /// assert!(r.try_recv().is_err());
-    /// ```
-    fn distinct_until_changed(self) -> DistinctUntilChangedPipeSender<T, S> {
-        DistinctUntilChangedPipeSender {
-            last_message: Arc::new(Mutex::new(None)),
-            inner_sender: self,
-        }
-    }
-}
-
-impl<T, S, R> DistinctUntilChanged<T, S, R> for (S, R)
-where
-    T: PartialEq + Clone,
-    S: CrossbeamSender<T>,
-{
-    fn distinct_until_changed(self) -> (DistinctUntilChangedPipeSender<T, S>, R) {
-        (self.0.distinct_until_changed(), self.1)
-    }
-}
-
 #[derive(Clone)]
-pub struct DistinctUntilChangedPipeSender<T, S>
+pub struct PipeSender<T, S>
 where
     T: PartialEq + Clone,
-    S: CrossbeamSender<T> + Sized,
+    S: CrossbeamSender<T> + PipelineStage<T, T> + Sized,
 {
     last_message: Arc<Mutex<Option<T>>>,
     inner_sender: S,
 }
 
-impl<T, S> PipelineStage<T, T> for DistinctUntilChangedPipeSender<T, S>
+impl<T, S> PipelineStage<T, T> for PipeSender<T, S>
 where
     T: PartialEq + Clone,
-    S: CrossbeamSender<T> + Sized,
+    S: CrossbeamSender<T> + PipelineStage<T, T> + Sized,
 {
     fn apply(&self, el: T) -> Option<T> {
         let inner_select = self.inner_sender.apply(el);
@@ -97,10 +37,10 @@ where
     }
 }
 
-impl<T, S> CrossbeamSender<T> for DistinctUntilChangedPipeSender<T, S>
+impl<T, S> CrossbeamSender<T> for PipeSender<T, S>
 where
     T: PartialEq + Clone,
-    S: CrossbeamSender<T> + Sized,
+    S: CrossbeamSender<T> + PipelineStage<T, T> + Sized,
 {
     fn try_send(&self, msg: T) -> Result<(), crossbeam_channel::TrySendError<T>> {
         if let Some(msg) = self.apply(msg) {
@@ -168,6 +108,53 @@ where
 
     fn same_channel(&self, other: &Sender<T>) -> bool {
         self.inner_sender.same_channel(other)
+    }
+}
+
+/// Filters repeating elements.
+pub trait DistinctUntilChanged<T, S, R>
+where
+    T: PartialEq + Clone,
+    S: CrossbeamSender<T> + PipelineStage<T, T>,
+{
+    /// Filters repeating elements on this channel.
+    fn distinct_until_changed(self) -> (PipeSender<T, S>, R);
+}
+
+impl<T, S, R> DistinctUntilChanged<T, S, R> for (S, R)
+where
+    T: PartialEq + Clone,
+    S: CrossbeamSender<T> + PipelineStage<T, T>,
+{
+    /// Wraps crossbeam's Sender so that it sends non-repeating elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use channel_pipes::crossbeam::{CrossbeamSender, DistinctUntilChanged};
+    /// use crossbeam_channel::unbounded;
+    ///
+    /// let (s, r) = unbounded::<i32>().distinct_until_changed();
+    ///
+    /// let vec = vec![1, 2, 2, 3, 3, 3, 1];
+    /// for i in vec {
+    ///     s.send(i);
+    /// }
+    ///
+    /// assert_eq!(Ok(1), r.try_recv());
+    /// assert_eq!(Ok(2), r.try_recv());
+    /// assert_eq!(Ok(3), r.try_recv());
+    /// assert_eq!(Ok(1), r.try_recv());
+    /// assert!(r.try_recv().is_err());
+    /// ```
+    fn distinct_until_changed(self) -> (PipeSender<T, S>, R) {
+        (
+            PipeSender {
+                last_message: Arc::new(Mutex::new(None)),
+                inner_sender: self.0,
+            },
+            self.1,
+        )
     }
 }
 
