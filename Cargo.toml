@@ -17,3 +17,6 @@ parking_lot = "0.12"
 default = ["crossbeam"]
 crossbeam = ["crossbeam-channel"]
 mpsc = []
+bus = []
+flume = []
+futures = []
