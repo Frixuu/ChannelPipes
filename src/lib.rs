@@ -17,6 +17,5 @@ compile_error!("channel_pipes doesn't work with the flume crate yet");
 #[cfg(feature = "futures")]
 compile_error!("channel_pipes doesn't work with futures-channel yet");
 
-pub trait PipelineStage<T> {
-    fn select(&self, el: T) -> Option<T>;
-}
+mod pipeline;
+pub use pipeline::PipelineStage;

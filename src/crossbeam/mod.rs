@@ -8,9 +8,9 @@ pub use distinct_until_changed::DistinctUntilChanged;
 
 use crate::PipelineStage;
 
-impl<T> PipelineStage<T> for Sender<T> {
-    fn select(&self, el: T) -> Option<T> {
-        Some(el)
+impl<T> PipelineStage<T, T> for Sender<T> {
+    fn apply(&self, element: T) -> Option<T> {
+        Some(element)
     }
 }
 
@@ -21,7 +21,7 @@ impl<T> PipelineStage<T> for Sender<T> {
 /// To learn more, see [`Sender`].
 pub trait CrossbeamSender<T>
 where
-    Self: Sized + PipelineStage<T>,
+    Self: Sized + PipelineStage<T, T>,
 {
     fn try_send(&self, msg: T) -> Result<(), TrySendError<T>>;
     fn send(&self, msg: T) -> Result<(), SendError<T>>;

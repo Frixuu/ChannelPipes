@@ -77,13 +77,13 @@ where
     inner_sender: S,
 }
 
-impl<T, S> PipelineStage<T> for DistinctUntilChangedPipeSender<T, S>
+impl<T, S> PipelineStage<T, T> for DistinctUntilChangedPipeSender<T, S>
 where
     T: PartialEq + Clone,
     S: CrossbeamSender<T> + Sized,
 {
-    fn select(&self, el: T) -> Option<T> {
-        let inner_select = self.inner_sender.select(el);
+    fn apply(&self, el: T) -> Option<T> {
+        let inner_select = self.inner_sender.apply(el);
         if let Some(element) = inner_select {
             let last_message = self.last_message.lock();
             if last_message.as_ref() == Some(&element) {
@@ -103,7 +103,7 @@ where
     S: CrossbeamSender<T> + Sized,
 {
     fn try_send(&self, msg: T) -> Result<(), crossbeam_channel::TrySendError<T>> {
-        if let Some(msg) = self.select(msg) {
+        if let Some(msg) = self.apply(msg) {
             let mut last_message = self.last_message.lock();
             *last_message = Some(msg.clone());
             self.inner_sender.try_send(msg)
@@ -113,7 +113,7 @@ where
     }
 
     fn send(&self, msg: T) -> Result<(), crossbeam_channel::SendError<T>> {
-        if let Some(msg) = self.select(msg) {
+        if let Some(msg) = self.apply(msg) {
             let mut last_message = self.last_message.lock();
             *last_message = Some(msg.clone());
             self.inner_sender.send(msg)
@@ -127,7 +127,7 @@ where
         msg: T,
         timeout: std::time::Duration,
     ) -> Result<(), crossbeam_channel::SendTimeoutError<T>> {
-        if let Some(msg) = self.select(msg) {
+        if let Some(msg) = self.apply(msg) {
             let mut last_message = self.last_message.lock();
             *last_message = Some(msg.clone());
             self.inner_sender.send_timeout(msg, timeout)
@@ -141,7 +141,7 @@ where
         msg: T,
         deadline: std::time::Instant,
     ) -> Result<(), crossbeam_channel::SendTimeoutError<T>> {
-        if let Some(msg) = self.select(msg) {
+        if let Some(msg) = self.apply(msg) {
             let mut last_message = self.last_message.lock();
             *last_message = Some(msg.clone());
             self.inner_sender.send_deadline(msg, deadline)
