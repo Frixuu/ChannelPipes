@@ -6,7 +6,7 @@ If you use ```crossbeam-channel```, add this to your ```Cargo.toml```:
 
 ```toml
 [dependencies]
-channel_pipes = { version = "0.1", features = ["crossbeam"] }
+channel_pipes = { version = "0.2", features = ["crossbeam"] }
 ```
 
 ## Examples
