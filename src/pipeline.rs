@@ -44,7 +44,7 @@ pub struct IdentityPipelineStage<T> {
 }
 
 impl<T> IdentityPipelineStage<T> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         IdentityPipelineStage {
             _marker: PhantomData,
         }

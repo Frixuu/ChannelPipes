@@ -1,3 +1,10 @@
+//! Performs a check on the provided element.
+//!
+//! If the previously checked element
+//! is equal to the currently checked element, returns failure state.
+//! Otherwise returns that element back,
+//! but mutates inner state to store a clone of this element.
+
 use std::sync::Arc;
 
 use parking_lot::Mutex;
@@ -54,5 +61,22 @@ where
     fn distinct_until_changed(self) -> (PipedSender<I, R, S>, V) {
         let (s, r) = self;
         (s.with_pipeline_stage(DistinctUntilChangedStage::new()), r)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{operators::distinct_until_changed::DistinctUntilChangedStage, PipelineStage};
+
+    #[test]
+    fn stage_holds_state_when_cloned() {
+        let s1 = DistinctUntilChangedStage::<i32>::new();
+        let s2 = s1.clone();
+        assert_eq!(Some(1), s1.apply(1));
+        assert_eq!(None, s2.apply(1));
+        assert_eq!(Some(2), s2.apply(2));
+        assert_eq!(None, s2.apply(2));
+        assert_eq!(None, s1.apply(2));
+        assert_eq!(Some(1), s1.apply(1));
     }
 }
