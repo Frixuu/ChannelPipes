@@ -15,11 +15,11 @@ channel_pipes = { version = "0.2", features = ["crossbeam"] }
 ## Examples
 
 ```rust
-use channel_pipes::crossbeam::{CrossbeamSender, DistinctUntilChanged};
+use channel_pipes::{operators::DistinctUntilChanged, CrossbeamSender, IntoPiped};
 use crossbeam_channel::unbounded;
 
 fn main() {
-    let (s, r) = unbounded::<i32>().distinct_until_changed();
+    let (s, r) = unbounded::<i32>().pipe().distinct_until_changed();
 
     let vec = vec![1, 2, 2, 3, 3, 3, 1];
     for i in vec {
