@@ -1,14 +1,8 @@
 //! Implementation of channel_pipes for the `crossbeam_channel` crate.
 
-use std::time::{Duration, Instant};
-
-use crossbeam_channel::{SendError, SendTimeoutError, Sender, TrySendError};
-
-pub mod distinct_until_changed;
-
-pub use distinct_until_changed::DistinctUntilChanged;
-
 use crate::PipelineStage;
+use crossbeam_channel::{SendError, SendTimeoutError, Sender, TrySendError};
+use std::time::{Duration, Instant};
 
 /// The sending side of a channel.
 ///
